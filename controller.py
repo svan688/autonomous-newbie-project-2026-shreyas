@@ -1,24 +1,3 @@
-# controller.py
-#
-# Faulty decision logic for the 2026 Autonomous Newbie Project.
-# Recruits will mainly modify this file.
-#
-# Sign convention:
-# lane_offset_m:
-#   negative = vehicle is left of lane center
-#   positive = vehicle is right of lane center
-#
-# heading_error_deg:
-#   negative = vehicle heading points left of desired direction
-#   positive = vehicle heading points right of desired direction
-#
-# Steering output semantics:
-# "LEFT" means command the vehicle to steer / move left.
-# "RIGHT" means command the vehicle to steer / move right.
-# Therefore:
-# - positive lane_offset_m means vehicle is right of center, so LEFT is corrective
-# - positive heading_error_deg means vehicle points right of desired direction, so LEFT is corrective
-
 VALID_STEERING = {"LEFT", "RIGHT", "STRAIGHT"}
 VALID_SPEED = {"ACCELERATE", "SLOW", "STOP"}
 
@@ -33,17 +12,6 @@ def controller(
     right_clear,
     sensor_valid
 ):
-    """
-    Returns:
-        (steering, speed_action)
-
-        steering:
-            "LEFT", "RIGHT", "STRAIGHT"
-
-        speed_action:
-            "ACCELERATE", "SLOW", "STOP"
-    """
-
     DANGER_OBSTACLE_M = 1.0
     CAUTION_OBSTACLE_M = 2.0
 
@@ -61,22 +29,19 @@ def controller(
     steering = "STRAIGHT"
     speed_action = "ACCELERATE"
 
+    # sensor check — first thing checked, can't trust any data if sensors are broken
     if not sensor_valid:
         return "STRAIGHT", "STOP"
 
-    if centered and small_heading_error:
+    # e_stop -> immediately stop no conditions
+    if e_stop:
+        return "STRAIGHT", "STOP"
+
+    if centered and small_heading_error and obstacle_distance_m > CAUTION_OBSTACLE_M:
         steering = "STRAIGHT"
         speed_action = "ACCELERATE"
 
-    elif speed_mps >= HIGH_SPEED_MPS:
-        if heading_error_deg > LARGE_HEADING_DEG or lane_offset_m > LARGE_OFFSET_M:
-            steering = "LEFT"
-            speed_action = "SLOW"
-
-        elif heading_error_deg < -LARGE_HEADING_DEG or lane_offset_m < -LARGE_OFFSET_M:
-            steering = "RIGHT"
-            speed_action = "SLOW"
-
+    # danger zone = obstacle within 1m
     elif obstacle_distance_m <= DANGER_OBSTACLE_M:
         if not left_clear and not right_clear:
             steering = "STRAIGHT"
@@ -102,6 +67,7 @@ def controller(
             steering = "LEFT"
             speed_action = "SLOW"
 
+    # caution zone = obstacle within 2m
     elif obstacle_distance_m <= CAUTION_OBSTACLE_M:
         if not left_clear and not right_clear:
             steering = "STRAIGHT"
@@ -127,17 +93,31 @@ def controller(
             steering = "STRAIGHT"
             speed_action = "SLOW"
 
-    if e_stop:
-        if obstacle_distance_m <= DANGER_OBSTACLE_M:
+    elif speed_mps >= HIGH_SPEED_MPS:
+        if heading_error_deg > LARGE_HEADING_DEG or lane_offset_m > LARGE_OFFSET_M:
+            steering = "LEFT"
+            speed_action = "SLOW"
+
+        elif heading_error_deg < -LARGE_HEADING_DEG or lane_offset_m < -LARGE_OFFSET_M:
+            steering = "RIGHT"
+            speed_action = "SLOW"
+
+        else:
             steering = "STRAIGHT"
-            speed_action = "STOP"
+            speed_action = "SLOW"
 
-    if heading_error_deg > LARGE_HEADING_DEG or lane_offset_m > LARGE_OFFSET_M:
-        steering = "LEFT"
-        speed_action = "ACCELERATE"
+    # large error correction
+    elif heading_error_deg > LARGE_HEADING_DEG or lane_offset_m > LARGE_OFFSET_M:
+        steering = "LEFT" #left because positive heading error means car is pointing to the right of lane center, so we need to steer left to correct
+        speed_action = "SLOW" 
 
-    if heading_error_deg < -LARGE_HEADING_DEG or lane_offset_m < -LARGE_OFFSET_M:
-        steering = "RIGHT"
-        speed_action = "ACCELERATE"
+    elif heading_error_deg < -LARGE_HEADING_DEG or lane_offset_m < -LARGE_OFFSET_M:
+        steering = "RIGHT" #right because negative heading error means car is pointing to the left of lane center, so we need to steer right to correct
+        speed_action = "SLOW"
+
+    
+    assert steering in VALID_STEERING, f"Invalid steering: {steering}"
+    assert speed_action in VALID_SPEED, f"Invalid speed: {speed_action}"
+
 
     return steering, speed_action
