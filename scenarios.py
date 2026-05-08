@@ -102,6 +102,46 @@ scenarios = [
         }
     },
     {
+    "name": "Caution Obstacle Ahead, Left Escape",
+    "inputs": {
+        "obstacle_distance_m": 1.8,
+        "lane_offset_m": 0.0,
+        "heading_error_deg": 0.0,
+        "speed_mps": 2.0,
+        "e_stop": False,
+        "left_clear": True,
+        "right_clear": False,
+        "sensor_valid": True
+    }
+},
+    {
+    "name": "Centered But Caution Obstacle Ahead",
+    "inputs": {
+        "obstacle_distance_m": 1.8,
+        "lane_offset_m": 0.0,
+        "heading_error_deg": 0.0,
+        "speed_mps": 2.0,
+        "e_stop": False,
+        "left_clear": True,
+        "right_clear": True,
+        "sensor_valid": True
+    }
+},
+
+    {
+    "name": "Centered But Danger Obstacle Ahead",
+    "inputs": {
+        "obstacle_distance_m": 0.8,
+        "lane_offset_m": 0.0,
+        "heading_error_deg": 0.0,
+        "speed_mps": 2.0,
+        "e_stop": False,
+        "left_clear": True,
+        "right_clear": True,
+        "sensor_valid": True
+    }
+},
+    {
         "name": "Mild Drift, No Obstacle",
         "inputs": {
             "obstacle_distance_m": 999.0,
